@@ -1,0 +1,5 @@
+Nota de aprobación: 60
+Nota de Reposisción: 40
+Tamaño de los grupos de notas: 10
+Escala del gráfico: 5
+Ordenamento: alfabético

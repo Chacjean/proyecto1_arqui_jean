@@ -1,0 +1,4 @@
+Juan <Perez> <Gomez> nota:75
+Ana nota:90
+Luis <Ramirez> nota:60
+Pedro <Martinez> <Lopez> nota:50

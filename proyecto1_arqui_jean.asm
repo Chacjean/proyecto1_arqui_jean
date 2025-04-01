@@ -1,6 +1,5 @@
 ;-----------------------------------
-; Programa en ensamblador x86-64 para Linux
-; Procesamiento de archivos de configuración y datos
+; Proyecto 1 Arqui
 ;-----------------------------------
 
 section .data
@@ -112,27 +111,61 @@ _start:
 	call print_buffer
 
 	;------------------------------
-	; Procesamiento del archivo de datos
+	; Convertir los datos de texto a enteros y almacenarlos en el arreglo
 	;------------------------------
-	mov rdi, msg_processing_data
-	call print_string
+	mov rsi, data_buffer   ; Dirección del buffer
+	mov rbx, 0             ; Contador de números leídos
+convert_loop_data:
+    ; Verificar si hemos leído todos los datos
+    cmp byte [rsi], 0
+    je end_conversion
 
-	; Aquí se agregará la lógica para el Bubble Sort
-	call bubble_sort
+    ; Llamar a la función text_to_int para convertir el número
+    mov rdi, rsi
+    call text_to_int
+
+    ; Almacenar el número convertido en el arreglo
+    mov [array + rbx * 4], rax
+    inc rbx
+
+    ; Avanzar al siguiente byte en el buffer
+    inc rsi
+    jmp convert_loop_data
+
+end_conversion:
+    mov [num_count], rbx ; Guardar la cantidad de números leídos
+    ; Continuar con el procesamiento de datos
+    mov rdi, msg_processing_data
+    call print_string
+
+    ;------------------------------
+	; Ordenamiento de los datos
+	;------------------------------
+    call bubble_sort
 
 	mov rdi, msg_sorting_done
 	call print_string
+
+    ; Imprimir los datos ordenados
+    mov rdi, msg_processing_done
+    call print_string
+    mov rsi, array        ; Dirección del arreglo
+    mov rdx, [num_count]  ; Número de elementos en el arreglo
+    call print_array
 
 	;------------------------------
 	; Fin del programa
 	;------------------------------
 	jmp exit_program
 
+;-----------------------------------
+; Función: bubble_sort
+;-----------------------------------
 bubble_sort:
 	mov rsi, 0
-	next_pass:
+next_pass:
 	mov rdi, 0
-	next_compare:
+next_compare:
 	mov rax, [array + rdi * 4]
 	mov rbx, [array + rdi * 4 + 4]
 	cmp rax, rbx
@@ -155,25 +188,23 @@ pass_done:
 	ret
 
 ;-----------------------------------
-; Manejo de errores
+; Función: text_to_int
 ;-----------------------------------
-config_error:
-	mov rdi, msg_config_error
-	call print_string
-	jmp exit_program
-
-data_error:
-	mov rdi, msg_data_error
-	call print_string
-	jmp exit_program
-
-;-----------------------------------
-; Salir del programa
-;-----------------------------------
-exit_program:
-	mov rax, 60
-	xor rdi, rdi
-	syscall
+; Convierte una cadena de texto (ASCII) en un número entero
+text_to_int:
+    xor rax, rax                ; Limpiar rax (registro acumulador)
+    xor rcx, rcx                ; Limpiar rcx (registro contador)
+convert_loop:
+    movzx rbx, byte [rdi + rcx] ; Cargar el siguiente byte de la cadena
+    test rbx, rbx                ; Comprobar si es el final de la cadena (0)
+    jz convert_done              ; Si es 0, hemos terminado
+    sub rbx, '0'                 ; Convertir el carácter ASCII a su valor numérico
+    imul rax, rax, 10            ; Multiplicar rax por 10 (desplazar un dígito)
+    add rax, rbx                 ; Sumar el valor del dígito
+    inc rcx                      ; Mover al siguiente carácter
+    jmp convert_loop             ; Repetir para el siguiente carácter
+convert_done:
+    ret
 
 ;-----------------------------------
 ; Función: print_string
@@ -204,3 +235,61 @@ print_buffer:
 	mov rdi, 1
 	syscall
 	ret
+
+;-----------------------------------
+; Función: print_array
+;-----------------------------------
+print_array:
+    xor rbx, rbx                  ; Inicializar contador
+print_loop:
+    cmp rbx, [num_count]          ; Comprobar si hemos imprimido todos los elementos
+    jge print_done_array
+    mov rdi, [array + rbx * 4]    ; Cargar número del arreglo
+    call int_to_text              ; Convertir entero a texto
+    mov rdi, rsi                  ; Dirección del texto
+    call print_string             ; Imprimir el número
+    inc rbx                       ; Avanzar al siguiente número
+    jmp print_loop
+print_done_array:
+    ret
+
+;-----------------------------------
+; Función: int_to_text
+;-----------------------------------
+; Convierte un número entero en una cadena de texto
+int_to_text:
+    xor rcx, rcx
+    mov rbx, 10
+    mov rdx, rsi
+    add rdx, 10
+reverse_digits:
+    xor rdx, rdx
+    div rbx
+    add dl, '0'
+    dec rdx
+    mov [rdx], dl
+    test rax, rax
+    jnz reverse_digits
+    mov rsi, rdx
+    ret
+
+;-----------------------------------
+; Manejo de errores
+;-----------------------------------
+config_error:
+	mov rdi, msg_config_error
+	call print_string
+	jmp exit_program
+
+data_error:
+	mov rdi, msg_data_error
+	call print_string
+	jmp exit_program
+
+;-----------------------------------
+; Salir del programa
+;-----------------------------------
+exit_program:
+	mov rax, 60
+	xor rdi, rdi
+	syscall
